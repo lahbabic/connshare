@@ -14,9 +14,11 @@ import os, sys, subprocess, re
 
 needed_binarys = [
                     ['hostapd',False],
-                    ['netfilter-persistent',False],
-                    ['isc-dhcp-server',False],
+                    ['netfilter-persistent',False]
           	 ]
+needed_deamons = [
+		    ['isc-dhcp-server',False]		    
+		 ]
 ipv4forward = "/proc/sys/net/ipv4/ip_forward"
 
 
@@ -85,18 +87,33 @@ def check_for_root():
 def check_for_binarys(binarys_array=[]):
     if not isinstance(binarys_array,list):
         sys.exit("\n\n"+R+"binary array should only be a list"+W)
-    stdout1, stderr, rcode = runcommand_with_timeout(["dpkg", "-l"])
-    if rcode == 0:    
-    	for needed_binary in binarys_array:
-	    stdout, stderr, rcode = runcommand_with_timeout(["grep", "-c", "-w", "ii  "+needed_binary[0]],"3",stdout1)    	
-	    formated_print('cheking if '+needed_binary[0]+" is installed",lchar="")
+    paths = os.environ["PATH"].split(':') #Tous les répertoires contenant des executables.
+    for needed_binary in binarys_array:
+        for path in paths:
+            if os.path.isfile(path+'/'+needed_binary[0]):
+                needed_binary[1] = True
+
+    for needed_binary in binarys_array:
+        formated_print('cheking if '+needed_binary[0]+" is installed",lchar="")
+        if not needed_binary[1]:
+            print_err()
+            sys.exit(1)
+        print_ok()
+
+def check_for_deamons(deamons_array=[]):
+    if not isinstance(deamons_array,list):
+	sys.exit("\n\n"+R+"deamon array should only be a list"+W)
+stdout1, stderr, rcode = runcommand_with_timeout(["systemctl", "status", le deamon if it's insttaled and running])
+    	for needed_deamon in deamons_array:
+	    stdout, stderr, rcode = runcommand_with_timeout(["grep", "-c", "-w", "ii  "+needed_deamon[0]],"3",stdout1)    	
+	    formated_print('cheking if '+needed_deamon[0]+" is installed and running",lchar="")
             if stdout == '1\n':   
-	        needed_binary[1] = True
+	        needed_deamon[1] = True
                 print_ok()
 	    else:
 	        print_err()
-                sys.exit(1)
-
+                sys.exit(1)    
+   
 def check_file_exist_and_is_writeateble(file_path=""):
     name = file_path.split('/')[-1] #getting the last element of the file_path
     formated_print('cheking if '+name+' exist',lchar="")
@@ -153,6 +170,7 @@ def checking_function():
     check_for_linux()
     check_for_root()
     check_for_binarys(needed_binarys)
+    check_for_deamons(needed_deamons)
     check_file_exist_and_is_writeateble(ipv4forward)
 
 
