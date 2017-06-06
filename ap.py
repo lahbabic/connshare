@@ -33,20 +33,6 @@ GR = '\033[37m' # gray
 
 
 
-
-
-
-
-
-
-
-
-
-def print_ok():
-    print(W+"["+G+"OK"+W+"]")
-def print_err():
-    print(W+"["+R+"error"+W+"]")
-
 def check_for_strings_value(list_of_value=[]):
     for elem in list_of_value:
         if not isinstance(elem, str):
@@ -55,6 +41,8 @@ def check_for_strings_value(list_of_value=[]):
 
 def print_ok():
     print(W+"["+G+"OK"+W+"]")
+def print_no():
+     print(W+"["+B+"NO"+W+"]")
 def print_err():
     print(W+"["+R+"error"+W+"]")
 def print_timeout():
@@ -102,18 +90,20 @@ def check_for_binarys(binarys_array=[]):
 
 def check_for_deamons(deamons_array=[]):
     if not isinstance(deamons_array,list):
-	sys.exit("\n\n"+R+"deamon array should only be a list"+W)
-stdout1, stderr, rcode = runcommand_with_timeout(["systemctl", "status", le deamon if it's insttaled and running])
-    	for needed_deamon in deamons_array:
-	    stdout, stderr, rcode = runcommand_with_timeout(["grep", "-c", "-w", "ii  "+needed_deamon[0]],"3",stdout1)    	
-	    formated_print('cheking if '+needed_deamon[0]+" is installed and running",lchar="")
-            if stdout == '1\n':   
-	        needed_deamon[1] = True
-                print_ok()
-	    else:
-	        print_err()
-                sys.exit(1)    
-   
+	   sys.exit("\n\n"+R+"deamon array should only be a list"+W)
+
+    for needed_deamon in deamons_array:
+        stdout1, stderr, rcode = runcommand_with_timeout(["systemctl", "status" ,"hostapd"])
+        formated_print('cheking if '+needed_deamon[0]+" is installed and running",lchar="")
+        if(rcode == 0):
+            needed_deamon[1] = True
+            print_ok()
+        elif(rcode == 3):
+            print_err()
+            exit()
+
+
+
 def check_file_exist_and_is_writeateble(file_path=""):
     name = file_path.split('/')[-1] #getting the last element of the file_path
     formated_print('cheking if '+name+' exist',lchar="")
