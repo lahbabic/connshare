@@ -93,14 +93,16 @@ def check_for_deamons(deamons_array=[]):
 	   sys.exit("\n\n"+R+"deamon array should only be a list"+W)
 
     for needed_deamon in deamons_array:
-        stdout1, stderr, rcode = runcommand_with_timeout(["systemctl", "status" ,"hostapd"])
+        stdout1, stderr, rcode = runcommand_with_timeout(["systemctl","status", needed_deamon[0]])
+        stdout, stderr, rcode = runcommand_with_timeout(["grep", "-u", "-w", "Loaded:"],"3", stdout1)
+        stdout, stderr, rcode = runcommand_with_timeout(["cut", "-d", " ", "-f", "5"], "3", stdout)
         formated_print('cheking if '+needed_deamon[0]+" is installed and running",lchar="")
-        if(rcode == 0):
+        if(stdout == "loaded\n"):
             needed_deamon[1] = True
             print_ok()
-        elif(rcode == 3):
+        elif(stdout == "not-found\n"):
             print_err()
-            exit()
+            sys.exit(1)
 
 
 
@@ -128,12 +130,13 @@ def runcommand_with_timeout(command=[],timeout="3",stdIN=""):
     command[:0] = ["timeout",timeout]
     proc = subprocess.Popen(command, bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = proc.communicate(input=b''+stdIN)
+
     if proc.returncode == 124:
         print_timeout()
     elif proc.returncode == 0:
         print_ok()
-    elif command[2] == "grep" and proc.returncode == 1:
-	print_ok()
+    elif proc.returncode == 3:
+        print_ok()
     else:
         print_err()
     return stdout, stderr, proc.returncode
