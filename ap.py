@@ -156,8 +156,18 @@ def get_gateways():
         else:
            print("Unacceptable ip address")
         
-
-
+def get_interfaces():
+    interfaces = []
+    print_info("Getting available interfaces")
+    stdout, stderr, rcode = runcommand_with_timeout(["ip", "link", "show"])
+    stdout, stderr, rcode = runcommand_with_timeout(["grep", " "], "3", stdout)
+    stdout, stderr, rcode = runcommand_with_timeout(["sort"], "3", stdout)
+    lines = stdout.split('\n')
+    for line in lines:
+        pattern = line.split(': ')
+        if pattern[0].isdigit() and pattern[1] != "lo":
+            interfaces.append(pattern[1])
+    
 def checking_function():
     print("Cheking for requirements")
     check_for_linux()
@@ -169,6 +179,6 @@ def checking_function():
 
 if __name__ == "__main__":
     checking_function()
-    get_gateways()
+    get_interfaces()
 
 
