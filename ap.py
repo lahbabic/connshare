@@ -95,7 +95,7 @@ def check_for_deamons(deamons_array=[]):
     for needed_deamon in deamons_array:
         stdout1, stderr, rcode = runcommand_with_timeout(["systemctl","status", needed_deamon[0]])
         stdout, stderr, rcode = runcommand_with_timeout(["grep", "-u", "-w", "Loaded:"],"3", stdout1)
-        stdout, stderr, rcode = runcommand_with_timeout(["cut", "-d", " ", "-f", "5"], "3", stdout)
+        stdout, stderr, rcode = runcommand_with_timeout(["cut", "-d"," ", "-f", "5"], "3", stdout)
         formated_print('cheking if '+needed_deamon[0]+" is installed and running",lchar="")
         if(stdout == "loaded\n"):
             needed_deamon[1] = True
@@ -130,7 +130,6 @@ def runcommand_with_timeout(command=[],timeout="3",stdIN=""):
     command[:0] = ["timeout",timeout]
     proc = subprocess.Popen(command, bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = proc.communicate(input=b''+stdIN)
-
     if proc.returncode == 124:
         print_timeout()
     elif proc.returncode == 0:
@@ -139,6 +138,7 @@ def runcommand_with_timeout(command=[],timeout="3",stdIN=""):
         print_ok()
     else:
         print_err()
+        sys.exit()
     return stdout, stderr, proc.returncode
 
 def get_gateways():
@@ -167,7 +167,20 @@ def get_interfaces():
         pattern = line.split(': ')
         if pattern[0].isdigit() and pattern[1] != "lo":
             interfaces.append(pattern[1])
-    
+    return interfaces
+
+def get_int(tmp):
+	valid = 0
+	while not valid:
+		try:
+			choice = int( raw_input(tmp) 	)
+			valid = 1
+		except ValueError, e:
+			print("%s is not valid integer" % e.args[0].split(": ")[1])
+		except EOFError, e:
+			sys.exit("\nExiting ...")
+	return choice
+
 def checking_function():
     print("Cheking for requirements")
     check_for_linux()
@@ -178,7 +191,21 @@ def checking_function():
 
 
 if __name__ == "__main__":
-    checking_function()
-    get_interfaces()
+	inter = []
+	checking_function()
+	interfaces = get_interfaces()
+	print("Available interfaces: ", end="\n")
+	i = 0
+	for interface in interfaces:
+		i = i+1
+		print("\t"+ str(i) +"- "+B+" "+interface+W+"\n")     
 
-
+	choice = get_int("Choose source interface [1-"+str(len(interfaces))+"] : ")
+	inter.append(interfaces[choice-1])
+	print("The source interface to share connection is: "+G+inter[0]+W)
+	choice = get_int("Choose destination interface [1-"+str(len(interfaces))+"] : ")
+	inter.append(interfaces[choice-1])
+	if inter[0] == inter[1]:
+		print(R+"Can't use the same interface"+W)
+		sys.exit()
+	print("The destination interface to share connection is: "+G+inter[1]+W)
