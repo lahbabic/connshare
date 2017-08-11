@@ -84,7 +84,7 @@ def check_for_binarys(binarys_array=[]):
     for needed_binary in binarys_array:
         formated_print('cheking if '+needed_binary[0]+" is installed",lchar="")
         if not needed_binary[1]:
-            print_err()
+            print(W+"["+R+"NO"+W+"]")
             sys.exit(1)
         print_ok()
 
@@ -181,7 +181,7 @@ def get_int(tmp):
 			sys.exit("\nExiting ...")
 	return choice
 
-def checking_function():
+def checking_functions():
     print("Cheking for requirements")
     check_for_linux()
     check_for_root()
@@ -189,10 +189,90 @@ def checking_function():
     check_for_deamons(needed_deamons)
     check_file_exist_and_is_writeateble(ipv4forward)
 
+def setup_dhcp_server(inter):
+	print("\n\nNext, to setup the dhcp server, you need to edit as root the file /etc/dhcp/dhcpd.conf\n")
+	print("Find the lines that say:\n")
+	print("\toption domain-name \"example.org\";")
+	print("\toption domain-name-servers ns1.example.org, ns2.example.org;\n")
+	print("and comment them with # in the beginning of each line\n")
+	raw_input('Press enter to continue: \n')
+
+	print("now you have to find out the one that say: #authoritative;\n")
+	print("\t and remove the # from the beginning of the line\n")
+	raw_input('Press enter to continue: \n')
+
+	print("next append to the end of the file the following: \n")
+	print("subnet 192.168.1.0 netmask 255.255.255.0 {\n\
+range 192.168.1.10 192.168.1.50;\n\
+option broadcast-address 192.168.1.255;\n\
+option routers 192.168.1.1;\n\
+default-lease-time 600;\n\
+max-lease-time 7200;\n\
+option domain-name \"local\";\n\
+option domain-name-servers 8.8.8.8, 8.8.4.4;\n\
+}")
+	raw_input('Press enter to continue: \n')
+
+	print(G+"Save the file"+W)
+	print("Edit as root the file /etc/default/isc-dhcp-server")
+	print("Find out the line that say: INTERFACES=\"\" ")
+
+	print("change it to INTERFACES=\""+inter[1]+"\"")
+
+	print("Next we have to setup the destination interface to static ip address:")
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "link", "set", "dev", inter[1], "down"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set interface down"+W)
+
+	print("Edit as root the file /etc/network/interfaces\n")
+	print("Find the line auto wlan0 and add a # in front of it\n")
+	print("Add the following :\n")
+	print("allow-hotplug "+inter[1]+"\n"\
+"iface "+inter[1]+" inet static\n\
+address 192.168.1.1\n\
+netmask 255.255.255.0\n")
+	raw_input('Press enter to continue: \n')
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "f", "dev", inter[1]])
+	print(rcode)
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not flush the interface"+W)
+
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "a", "192.168.1.1", "dev", inter[1]])
+	print(rcode)
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not setup the interface ip"+W)
+
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "link", "set", "dev", inter[1], "up"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set interface up"+W)
+
+	print("Next we have to configure the access point: \n")
+	print("Edit as root the file /etc/hostapd/hostapd.conf")
+	print("interface="+inter[1]+"\n\
+driver=nl80211\n\
+ssid=AP\n\
+country_code=FR\n\
+hw_mode=a\n\
+channel=11\n\
+macaddr_acl=0\n\
+auth_algs=1\n\
+ignore_broadcast_ssid=0\n\
+wpa=2\n\
+wpa_passphrase=belle123..\n\
+wpa_key_mgmt=WPA-PSK\n\
+wpa_pairwise=CCMP\n\
+wpa_group_rekey=86400\n\
+ieee80211n=1\n\
+wme_enabled=1\n")
+
+	raw_input('Press enter to continue: \n')
+
+
+
 
 if __name__ == "__main__":
 	inter = []
-	checking_function()
+	checking_functions()
 	interfaces = get_interfaces()
 	print("Available interfaces: ", end="\n")
 	i = 0
@@ -209,3 +289,4 @@ if __name__ == "__main__":
 		print(R+"Can't use the same interface"+W)
 		sys.exit()
 	print("The destination interface to share connection is: "+G+inter[1]+W)
+	setup_dhcp_server(inter)
