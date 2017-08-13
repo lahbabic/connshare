@@ -41,7 +41,7 @@ After that, cocoshare will give you a custom configurations to add to some confi
 
 He also runs some commands to help you during this process. All the commands executed will be prompted to the shell. 
 
-<img src="/cocoshare1.png" alt="use" style="width:128px;height:128px;">
+<img src="/cocoshare1.png" alt="use" align="middle" style="width:128px;height:128px;">
 </body>
 
 
