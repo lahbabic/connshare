@@ -1,5 +1,10 @@
-# cocoshare a python script that helps to configure simple access point
 
+<head>
+
+#  cocoshare a python script that helps to configure simple access point 
+</head>
+
+<body>
 
 ### Introduction
 
@@ -34,6 +39,6 @@ After that, cocoshare will give you a custom configurations to add to some confi
 * /etc/dhcp/dhcpd.conf
 
 He also runs some commands to help you during this process. All the commands executed will be prompted to the shell. 
-
+</body>
 
 
