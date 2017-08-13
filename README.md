@@ -40,6 +40,8 @@ After that, cocoshare will give you a custom configurations to add to some confi
 * /etc/dhcp/dhcpd.conf
 
 He also runs some commands to help you during this process. All the commands executed will be prompted to the shell. 
+
+<img src="/cocoshare1.png" alt="use" style="width:128px;height:128px;">
 </body>
 
 
