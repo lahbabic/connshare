@@ -1,6 +1,6 @@
 
 <head>
-<meta name="keywords" content="python, share, connection, access point, share connection, hostapd, ethernet, wifi, ethernet through wifi, wifi through ethernet, python script, configure access point, debian, linux" >
+<meta name="keywords" content="python, share, connection, access point, share connection, hostapd, ethernet, wifi, ethernet through wifi, wifi through ethernet, python script, configure access point, debian, linux, wireless" >
 
 #  cocoshare a python script that helps to configure simple access point 
 </head>
