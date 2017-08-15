@@ -14,7 +14,8 @@ import os, sys, subprocess, re
 
 needed_binarys = [
                     ['hostapd',False],
-                    ['netfilter-persistent',False]
+                    ['netfilter-persistent',False],
+                    ['rfkill',False]
           	 ]
 needed_deamons = [
 		    ['isc-dhcp-server',False]		    
@@ -189,7 +190,7 @@ def checking_functions():
     check_for_deamons(needed_deamons)
     check_file_exist_and_is_writeateble(ipv4forward)
 
-def setup_dhcp_server(inter):
+def setup_dhcp_ap(inter):
 	print("\n\nNext, to setup the dhcp server, you need to edit as root the file /etc/dhcp/dhcpd.conf\n")
 	print("Find the lines that say:\n")
 	print("\toption domain-name \"example.org\";")
@@ -233,14 +234,16 @@ address 192.168.1.1\n\
 netmask 255.255.255.0\n")
 	raw_input('Press enter to continue: \n')
 	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "f", "dev", inter[1]])
-	print(rcode)
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not flush the interface"+W)
 
 	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "a", "192.168.1.1", "dev", inter[1]])
-	print(rcode)
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not setup the interface ip"+W)
+
+	stdout, stderr, rcode = runcommand_with_timeout(["rfkill", "unblock", "all"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set interface up"+W)
 
 	stdout, stderr, rcode = runcommand_with_timeout(["ip", "link", "set", "dev", inter[1], "up"])
 	if rcode != 0:
@@ -258,7 +261,7 @@ macaddr_acl=0\n\
 auth_algs=1\n\
 ignore_broadcast_ssid=0\n\
 wpa=2\n\
-wpa_passphrase=belle123..\n\
+wpa_passphrase=test1\n\
 wpa_key_mgmt=WPA-PSK\n\
 wpa_pairwise=CCMP\n\
 wpa_group_rekey=86400\n\
@@ -267,8 +270,23 @@ wme_enabled=1\n")
 
 	raw_input('Press enter to continue: \n')
 
+	print("Next we have to specify to hostapd where is the configuration file: \n")
+	print("Edit as root the file /etc/default/hostapd\n")
+	print("Find the line that say #DAEMON_CONF=\"\"")
+	print("Edit it to DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"")
+
+	raw_input('Press enter to continue: \n')
+
+	print("\nEnable ip forward for ipv4: \n")
+	print("Edit the file /etc/sysctl.conf and add at the bottom: \n")
+	print("net.ipv4.ip_forward=1")
+
+	raw_input('Press enter to continue: \n')
 
 
+	stdout, stderr, rcode = runcommand_with_timeout(["echo", "1", ">", "/proc/sys/net/ipv4/ip_forward"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set interface up"+W)
 
 if __name__ == "__main__":
 	inter = []
@@ -289,4 +307,4 @@ if __name__ == "__main__":
 		print(R+"Can't use the same interface"+W)
 		sys.exit()
 	print("The destination interface to share connection is: "+G+inter[1]+W)
-	setup_dhcp_server(inter)
+	setup_dhcp_ap(inter)
