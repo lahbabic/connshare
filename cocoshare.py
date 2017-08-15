@@ -237,7 +237,7 @@ netmask 255.255.255.0\n")
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not flush the interface"+W)
 
-	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "a", "192.168.1.1", "dev", inter[1]])
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "a", "192.168.1.1/24", "dev", inter[1]])
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not setup the interface ip"+W)
 
@@ -255,7 +255,7 @@ netmask 255.255.255.0\n")
 driver=nl80211\n\
 ssid=AP\n\
 country_code=FR\n\
-hw_mode=a\n\
+hw_mode=g\n\
 channel=11\n\
 macaddr_acl=0\n\
 auth_algs=1\n\
@@ -263,7 +263,8 @@ ignore_broadcast_ssid=0\n\
 wpa=2\n\
 wpa_passphrase=test1\n\
 wpa_key_mgmt=WPA-PSK\n\
-wpa_pairwise=CCMP\n\
+rsn_pairwise=CCMP\nl80211\
+wpa_pairwise=TKIP\n\
 wpa_group_rekey=86400\n\
 ieee80211n=1\n\
 wme_enabled=1\n")
@@ -288,6 +289,31 @@ wme_enabled=1\n")
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not set interface up"+W)
 
+def create_iptables_rules(inter):
+	stdout, stderr, rcode = runcommand_with_timeout(["iptables", "-F"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not flush iptables rules"+W)
+
+	stdout, stderr, rcode = runcommand_with_timeout(["iptables", "-t", "nat", "-A", "POSTROUTING", "-o", inter[0], "-j", "MASQUERADE"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set iptables rule"+W)
+
+	stdout, stderr, rcode = runcommand_with_timeout(["iptables", "-A", "FORWARD", "-i", inter[0], "-o", inter[1], "-m", "state", "--state",\
+		"RELATED,ESTABLISHED", "-j", "ACCEPT"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set iptables rule"+W)
+
+	stdout, stderr, rcode = runcommand_with_timeout(["iptables", "-A", "FORWARD", "-i", inter[1], "-o", inter[0], "-j", "ACCEPT"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not set iptables rule"+W)
+
+
+def run_hostapd():
+	stdout, stderr, rcode = runcommand_with_timeout(["systemctl", "restart", "isc-dhcp-server"])
+	if rcode != 0:
+		sys.exit("\n\n"+R+"Error, could not restart dhcp server"+W)
+			
+	print("\n\nRun :\n\thostapd /etc/hostapd/hostapd.conf")
 if __name__ == "__main__":
 	inter = []
 	checking_functions()
@@ -308,3 +334,5 @@ if __name__ == "__main__":
 		sys.exit()
 	print("The destination interface to share connection is: "+G+inter[1]+W)
 	setup_dhcp_ap(inter)
+	create_iptables_rules(inter)
+	run_hostapd()
