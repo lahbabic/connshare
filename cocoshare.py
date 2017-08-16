@@ -5,7 +5,7 @@
 #################[Libs]#################
 
 from __future__ import print_function
-import os, sys, subprocess, re
+import os, sys, subprocess, re, time
 
 
 
@@ -138,6 +138,7 @@ def runcommand_with_timeout(command=[],timeout="3",stdIN=""):
     elif proc.returncode == 3:
         print_ok()
     else:
+    	print(proc.returncode)
         print_err()
         sys.exit()
     return stdout, stderr, proc.returncode
@@ -233,21 +234,18 @@ option domain-name-servers 8.8.8.8, 8.8.4.4;\n\
 address 192.168.1.1\n\
 netmask 255.255.255.0\n")
 	raw_input('Press enter to continue: \n')
-	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "f", "dev", inter[1]])
-	if rcode != 0:
-		sys.exit("\n\n"+R+"Error, could not flush the interface"+W)
 
-	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "a", "192.168.1.1/24", "dev", inter[1]])
-	if rcode != 0:
-		sys.exit("\n\n"+R+"Error, could not setup the interface ip"+W)
+	stdout, stderr, rcode = runcommand_with_timeout(["nmcli", "radio", "wifi", "off"])
 
 	stdout, stderr, rcode = runcommand_with_timeout(["rfkill", "unblock", "all"])
-	if rcode != 0:
-		sys.exit("\n\n"+R+"Error, could not set interface up"+W)
+	#Error, could unblock interface
 
-	stdout, stderr, rcode = runcommand_with_timeout(["ip", "link", "set", "dev", inter[1], "up"])
-	if rcode != 0:
-		sys.exit("\n\n"+R+"Error, could not set interface up"+W)
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "f", "dev", inter[1]])
+	#Error, could not flush the interface
+
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "a", "a", "192.168.1.1/24", "dev", inter[1]])
+	#Error, could not setup the interface ip
+
 
 	print("Next we have to configure the access point: \n")
 	print("Edit as root the file /etc/hostapd/hostapd.conf")
@@ -260,10 +258,10 @@ channel=11\n\
 macaddr_acl=0\n\
 auth_algs=1\n\
 ignore_broadcast_ssid=0\n\
-wpa=2\n\
-wpa_passphrase=test1\n\
+wpa=3\n\
+wpa_passphrase=test1234\n\
 wpa_key_mgmt=WPA-PSK\n\
-rsn_pairwise=CCMP\nl80211\
+rsn_pairwise=CCMP\n\
 wpa_pairwise=TKIP\n\
 wpa_group_rekey=86400\n\
 ieee80211n=1\n\
@@ -307,13 +305,22 @@ def create_iptables_rules(inter):
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not set iptables rule"+W)
 
+	stdout, stderr, rcode = runcommand_with_timeout(["ip", "link", "set", "dev", inter[1], "up"])
+	#Error, could not set interface up
+	time.sleep(2)
 
 def run_hostapd():
-	stdout, stderr, rcode = runcommand_with_timeout(["systemctl", "restart", "isc-dhcp-server"])
+
+	stdout, stderr, rcode = runcommand_with_timeout(["systemctl", "start", "isc-dhcp-server"])
 	if rcode != 0:
 		sys.exit("\n\n"+R+"Error, could not restart dhcp server"+W)
-			
-	print("\n\nRun :\n\thostapd /etc/hostapd/hostapd.conf")
+	
+	print("run the following command to checkout if isc-dhcp-server is running:\n\n\t systemctl status isc-dhcp-server\n")
+	print("if your isc-dhcp-server doesn't start run this command :\n\
+		\n\t rm /var/run/dhcpd.pid \n")
+
+	print("\n\nRun this command to start your access point:\n\n\thostapd /etc/hostapd/hostapd.conf\n\n")
+	print("if hostapd doesn't start try to reload your wireless driver.\n")
 if __name__ == "__main__":
 	inter = []
 	checking_functions()
